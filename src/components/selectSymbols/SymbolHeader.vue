@@ -39,6 +39,7 @@ import axios from 'axios';
                 })
                 .then((response) => {
                     console.log(response);
+                    this.$parent.$emit('isSuccess', true)
                 }, (error) => {
                     console.log(error);
                 });

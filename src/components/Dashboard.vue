@@ -3,7 +3,7 @@
        <Navbar @settings="settingsStatus" @account="accountStatus" @signout="signOut"></Navbar>
         <div class="content">
             <div v-if="doSettings"><Settings></Settings></div>
-            <div v-if="doAccount">{{token}}</div>
+            <div v-if="doAccount"><my-account></my-account></div>
         </div>
    </div>
 </template>
@@ -11,14 +11,15 @@
 
 <script>
 import Navbar from './Navbar.vue'
-//import MyAccount from './MyAccount.vue'
+import MyAccount from './MyAccount.vue'
 import Settings from './Settings'
 
 export default {
     name: 'Dashboard',
     components: {
         Navbar,
-        Settings
+        Settings,
+        MyAccount
     },
     props: {
       msg: String,
@@ -41,6 +42,8 @@ export default {
       },
       signOut(value) {
           this.$emit('signout', value);
+          localStorage.delete('token');
+          window.location.href = ".";
       }
   }
 }

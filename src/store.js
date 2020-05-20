@@ -27,13 +27,13 @@ export const store = new Vuex.Store({
     mutations: {
         select(state, name) {
             const symbol = state.symbols.find(symbol => {
-                return symbol.name === name;
+                return symbol.name ===  name.toUpperCase();
             });
             symbol.selected = true;
         },
         unselect(state, name) {
             const symbol = state.symbols.find(symbol => {
-                return symbol.name === name;
+                return symbol.name === name.toUpperCase();
             });
             symbol.selected = false;
         },
