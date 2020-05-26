@@ -4,7 +4,41 @@
     <b-alert v-if="successAdded > 0" variant="success" show>{{ successAdded }} companies has been sucessful added. </b-alert>
     <b-alert v-if="successDeleted > 0" variant="success" show>{{ successDeleted }} companies has been sucessful deleted. </b-alert>
     <b-alert v-if="errorMessage != ''" variant="danger" show>Something went wrong. There is error message like: {{errorMessage.message}}</b-alert>
+    <b-alert v-if="successUpdated > 0" variant="success" show>{{ successUpdated }} max invests has been updated. </b-alert>
       </span>
+    <b-container style="margin-bottom:5px;" fluid>
+  <b-row>
+    <b-col cols=2>
+      <h7> Set maximum range: </h7>
+    </b-col>
+    <b-col cols=4>
+      <a-slider v-model="newMaxInvest" :min="sliderMinRange" :max="100" step="0.2" />
+    </b-col>
+    <b-col cols=1>
+      <a-input-number v-model="newMaxInvest" :min="sliderMinRange" :max="100" step="0.2" style="marginLeft: 16px" />
+    </b-col>
+    <b-col cols=1>
+      <a-button type="primary"
+      size="medium"
+      @click="setNewMax"
+    >
+      Set
+    </a-button>
+    </b-col>
+  </b-row>
+  </b-container>
+      <!-- <a-row style="margin-bottom: 5px">
+        <a-col>
+          Chuj
+        </a-col>
+      <a-col :span="16" style="margin-left:10%">
+        <a-slider v-model="newMaxInvest" :min="maxMaxInvest" :max="20" />
+      </a-col>
+      <a-col :span="4">
+        <a-input-number v-model="newMaxInvest" :min="maxMaxInvest" :max="20" style="marginLeft: 16px" />
+      </a-col>
+    </a-row> -->
+    
     <div>
     <a-transfer
       :data-source="mockData"
@@ -31,24 +65,35 @@
           size="small"
           :style="{ pointerEvents: listDisabled ? 'none' : null }"
         >
-        <span slot="percents" v-bind="percent">
+        <template slot="header">
+      Header
+        </template>
+        <span slot="percents_col" slot-scope="title">
           <a-row>
-      <a-col :span="12">
-        <a-slider  v-model="percent" :min="0" :max="1" :step="0.01" />
+      <a-col :span="16">
+        <a-slider v-model="companyMaxInvest[title]" :min="0" :max="maxMaxInvest" :step="0.1" />
       </a-col>
       <a-col :span="4">
         <a-input-number
-          v-model="percent"
+          v-model="companyMaxInvest[title]"
           :min="0"
-          :max="1"
-          :step="0.01"
+          :max="maxMaxInvest"
+          :step="0.1"
           style="marginLeft: 16px"
-        /> 
-       </a-col>
-       </a-row> 
-      </span>
+        />
+      </a-col>
+    </a-row>
+        </span>
         </a-table>
       </template>
+    <a-button type="primary"
+      size="medium"
+      slot="footer"
+      style="float:left;margin-left: 30px; margin-bottom: 5px; margin-top: 10px"
+      @click="updateMaxInvest"
+    >
+      Update
+    </a-button>
     </a-transfer>
     </div>
   </div>
@@ -65,6 +110,8 @@ import axios from 'axios'
 Vue.use(Antd);
 
 import difference from 'lodash/difference';
+
+
 
 const leftTableColumns = [
   {
@@ -91,10 +138,10 @@ const rightTableColumns = [
     title: 'Currency',
   },
   {
-    dataIndex: 'percent',
-    key: 'percents',
+    dataIndex: 'title',
+    key: 'percent_key',
     title: 'Percent',
-    scopedSlots: { customRender: 'percent' },
+    scopedSlots: { customRender: 'percents_col' },
   },
 ];
 
@@ -114,14 +161,27 @@ export default {
       showSearch: true,
       leftColumns: leftTableColumns,
       rightColumns: rightTableColumns,
-      inputValues: []
+      inputValues: [],
+      companyMaxInvest: {},
+      copyMaxInvest: {},
+      maxMaxInvest: 0,
+      sliderMinRange: 0,
+      successUpdated: 0,
+      newMaxInvest: 0,
     };
   },
   mounted() {
     this.getData();
+    this.getMaxInvest();
   },
   methods: {
-      onChange(nextTargetKeys) {
+      setNewMax() {
+        for (var item of Object.keys(this.companyMaxInvest)){
+          if(this.companyMaxInvest[item] > this.newMaxInvest) return;
+        }
+        this.maxMaxInvest = this.newMaxInvest;
+      },
+      async onChange(nextTargetKeys) {
       var oldKeys = [...this.targetKeys];
       this.targetKeys = nextTargetKeys;
       for(let item of nextTargetKeys) {
@@ -134,13 +194,14 @@ export default {
               const data = {
                   companyName: item
               }
-            axios.post(process.env.VUE_APP_API_ENDPOINT + '/user/saveCompany', data,
+            await axios.post(process.env.VUE_APP_API_ENDPOINT + '/saveCompany', data,
                 { 
                     headers: headers 
                 })
                 .then((response) => {
                     console.log(response);
                     this.successDeleted = 0;
+                    this.successUpdated = 0;
                     this.successAdded += 1;
                     this.errorMessage = '';
                 }, (error) => {
@@ -148,6 +209,7 @@ export default {
                     this.errorMessage = error;
                 });
           }
+          this.getMaxInvest();
       }
       for(let item of oldKeys) {
           if(!nextTargetKeys.includes(item)) {
@@ -159,14 +221,17 @@ export default {
               const data = {
                   companyName: item
               }
-            axios.post(process.env.VUE_APP_API_ENDPOINT + '/user/deleteCompany', data,
+              console.log(data)
+            axios.delete(process.env.VUE_APP_API_ENDPOINT + '/deleteCompany',
                 { 
-                    headers: headers 
+                    headers: headers,
+                    data: data
                 })
                 .then((response) => {
                     console.log(response);
                     this.successDeleted += 1;
                     this.successAdded = 0;
+                    this.successUpdated = 0;
                     this.errorMessage = '';
                 }, (error) => {
                     console.log(error);
@@ -215,6 +280,7 @@ export default {
                         chosen: item.selected,
                         percent: 0.3,
                         };
+                        
                         if (data.chosen) {
                             targetKeys.push(data.key);
                        }
@@ -222,19 +288,71 @@ export default {
                     }
                     this.mockData = mockData;
                     this.targetKeys = targetKeys;
+                   // this.initCompany()
                    
                 }, (error) => {
                     console.log(error);
                     this.errorMessage = error;
                 });
       },
-  },
-  computed: {
-    dynamicComponent() {
-        return {
-        template: '<div><b>Hello</b></div>'
+      getMaxInvest() {
+         const companyMaxInvest = {};
+         let maxMaxInvest = 0.0
+         let headers = {
+                'Content-Type': 'application/json',
+                'Device-info': 'None',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            };
+         axios.get(process.env.VUE_APP_API_ENDPOINT + '/companiesForUser',
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    for (var item of response.data) {
+                        companyMaxInvest[item.company.name] = item.maxInvest;
+                        if(item.maxInvest > maxMaxInvest) {
+                          maxMaxInvest = item.maxInvest;
+                        }
+                    }
+                   this.companyMaxInvest = companyMaxInvest;
+                   this.maxMaxInvest = maxMaxInvest;
+                   this.sliderMinRange = maxMaxInvest;
+                   this.copyMaxInvest = JSON.parse(JSON.stringify(companyMaxInvest))
+                   //console.log(companyMaxInvest);
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+      },
+      updateMaxInvest() {
+        for (var item of Object.keys(this.companyMaxInvest)) {
+          if(this.companyMaxInvest[item] != this.copyMaxInvest[item]) {
+            let headers = {
+                'Content-Type': 'application/json',
+                'Device-info': 'None',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            };
+              const data = {
+                  companyName: item,
+                  maxInvest: this.companyMaxInvest[item]
+              }
+            axios.put(process.env.VUE_APP_API_ENDPOINT + '/changeMaxInvest', data,
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    console.log(response);
+                    this.successDeleted = 0;
+                    this.successAdded = 0;
+                    this.successUpdated += 1;
+                    this.errorMessage = '';
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+          }
       }
-    }
+  },
   }
 }
 
@@ -253,5 +371,6 @@ export default {
 .transfer {
     margin-right: 1%;
     margin-left: 1%;
+    margin-top: -1%;
 }
 </style>
