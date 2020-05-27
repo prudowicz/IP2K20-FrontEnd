@@ -1,3 +1,3 @@
 export default {
-    root: "http://ip_backend"
+    root: "http://localhost:12121"
 };
