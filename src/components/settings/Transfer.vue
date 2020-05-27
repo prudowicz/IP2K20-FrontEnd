@@ -22,30 +22,18 @@
       size="medium"
       @click="setNewMax"
     >
-      Set
+      Set maximum range
     </a-button>
     </b-col>
   </b-row>
   </b-container>
-      <!-- <a-row style="margin-bottom: 5px">
-        <a-col>
-          Chuj
-        </a-col>
-      <a-col :span="16" style="margin-left:10%">
-        <a-slider v-model="newMaxInvest" :min="maxMaxInvest" :max="20" />
-      </a-col>
-      <a-col :span="4">
-        <a-input-number v-model="newMaxInvest" :min="maxMaxInvest" :max="20" style="marginLeft: 16px" />
-      </a-col>
-    </a-row> -->
-    
     <div>
     <a-transfer
       :data-source="mockData"
       :target-keys="targetKeys"
       :disabled="disabled"
       :show-search="showSearch"
-      :filter-option="(inputValue, item) => item.title.indexOf(inputValue) !== -1"
+      :filter-option="(inputValue, item) => (item.title.indexOf(inputValue) !== -1)"
       :show-select-all="false"
       @change="onChange"
     >
@@ -64,10 +52,9 @@
           :data-source="filteredItems"
           size="small"
           :style="{ pointerEvents: listDisabled ? 'none' : null }"
+          :leftFilter="handeLeftFilter"
         >
-        <template slot="header">
-      Header
-        </template>
+    
         <span slot="percents_col" slot-scope="title">
           <a-row>
       <a-col :span="16">
@@ -92,7 +79,7 @@
       style="float:left;margin-left: 30px; margin-bottom: 5px; margin-top: 10px"
       @click="updateMaxInvest"
     >
-      Update
+      Update max invests
     </a-button>
     </a-transfer>
     </div>
@@ -111,6 +98,35 @@ Vue.use(Antd);
 
 import difference from 'lodash/difference';
 
+function getCategoriesList() {
+    if(sessionStorage.getItem('categories')) {
+      let list = []
+      let temp = JSON.parse(sessionStorage.getItem('categories'))
+      console.log(temp)
+      for(let e of temp) {
+        let obj = {"text": e, "value": e}
+        list.push(obj)
+      }
+      console.log(list)
+      return list;
+    }
+}
+
+
+function getCurrenciesList() {
+    if(sessionStorage.getItem('currencies')) {
+      let list = []
+      let temp = JSON.parse(sessionStorage.getItem('currencies'))
+      console.log(temp)
+      for(let e of temp) {
+        let obj = {"text": e, "value": e}
+        list.push(obj)
+      }
+      console.log(list)
+      return list;
+    }
+}
+
 
 
 const leftTableColumns = [
@@ -122,25 +138,36 @@ const leftTableColumns = [
   {
     dataIndex: 'description',
     title: 'Category',
+    key: 'description',
+    filters: getCategoriesList(),
+    onFilter: (value, record) => record.description.indexOf(value) === 0,
   },
   {
     dataIndex: 'currency',
     title: 'Currency',
+    key: 'currency',
+    filters: getCurrenciesList(),
+    onFilter: (value, record) => record.currency.indexOf(value) === 0,
+   
   },
 ];
 const rightTableColumns = [
   {
     dataIndex: 'title',
     title: 'Name',
+    key: 'title',
   },
   {
     dataIndex: 'currency',
     title: 'Currency',
+    key: 'currency',
+    filters: getCurrenciesList(),
+    onFilter: (value, record) => record.currency.indexOf(value) === 0,
   },
   {
     dataIndex: 'title',
     key: 'percent_key',
-    title: 'Percent',
+    title: 'Max invest',
     scopedSlots: { customRender: 'percents_col' },
   },
 ];
@@ -161,20 +188,38 @@ export default {
       showSearch: true,
       leftColumns: leftTableColumns,
       rightColumns: rightTableColumns,
-      inputValues: [],
       companyMaxInvest: {},
       copyMaxInvest: {},
       maxMaxInvest: 0,
       sliderMinRange: 0,
       successUpdated: 0,
       newMaxInvest: 0,
+      firstLeft: "",
+      firstRight: "",
+      notSelectedKeys: [],
+      categories: [],
+      currencies: []
     };
   },
   mounted() {
     this.getData();
     this.getMaxInvest();
   },
+  async beforeCreate() {
+        
+  },
   methods: {
+    handleLeftCurrencyChange(value) {
+      console.log(`Selected: ${value}`);
+      console.log(`Selected: ${this.filteredItems}`);
+      
+    },
+      ifLeftTable(key) {
+        if(this.targetKeys.includes(key)) {
+          return false
+        }
+        return true;
+      },
       setNewMax() {
         for (var item of Object.keys(this.companyMaxInvest)){
           if(this.companyMaxInvest[item] > this.newMaxInvest) return;
@@ -194,7 +239,7 @@ export default {
               const data = {
                   companyName: item
               }
-            await axios.post(process.env.VUE_APP_API_ENDPOINT + '/saveCompany', data,
+             await axios.post(process.env.VUE_APP_API_ENDPOINT + '/saveCompany', data,
                 { 
                     headers: headers 
                 })
@@ -208,8 +253,12 @@ export default {
                     console.log(error);
                     this.errorMessage = error;
                 });
-          }
+                let index = this.notSelectedKeys.indexOf(item)
+           this.notSelectedKeys.splice(index, 1);
           this.getMaxInvest();
+          }
+          this.firstLeft = this.notSelectedKeys[0]
+           console.log(this.firstLeft)
       }
       for(let item of oldKeys) {
           if(!nextTargetKeys.includes(item)) {
@@ -221,8 +270,7 @@ export default {
               const data = {
                   companyName: item
               }
-              console.log(data)
-            axios.delete(process.env.VUE_APP_API_ENDPOINT + '/deleteCompany',
+              await axios.delete(process.env.VUE_APP_API_ENDPOINT + '/deleteCompany',
                 { 
                     headers: headers,
                     data: data
@@ -237,8 +285,18 @@ export default {
                     console.log(error);
                     this.errorMessage = error;
                 });
+                for(let data of this.mockData) {
+                  if(data.chosen == false) {
+                    console.log(data);
+                    this.firstLeft = data.key
+                    break;
+                  }
+                }
+                
           }
       }
+      //this.firstLeft = notSelectedKeys[0]
+      this.firstRight = nextTargetKeys[0]
     },
     getRowSelection({ disabled, selectedKeys, itemSelectAll, itemSelect }) {
       return {
@@ -258,7 +316,7 @@ export default {
         selectedRowKeys: selectedKeys,
       };
     },
-    getData() {
+    async getData() {
           const targetKeys = [];
           const mockData = [];
           let headers = {
@@ -266,7 +324,7 @@ export default {
                 'Device-info': 'None',
                 'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-            axios.get(process.env.VUE_APP_API_ENDPOINT + '/companies/selectInfo',
+            await axios.get(process.env.VUE_APP_API_ENDPOINT + '/companies/selectInfo',
                 { 
                     headers: headers 
                 })
@@ -278,16 +336,28 @@ export default {
                         description: item.categoryName,
                         currency: item.currency,
                         chosen: item.selected,
-                        percent: 0.3,
+                        show: false,
                         };
-                        
+                        if(!this.categories.includes(data.description)) {
+                          let tempObj = {"text": data.description, "value": data.description}
+                          this.categories.push(tempObj)
+                        }
+                        if(!this.currencies.includes(data.currency)) {
+                          this.currencies.push(data.currency)
+                        }
                         if (data.chosen) {
                             targetKeys.push(data.key);
+                       }
+                       else {
+                         this.notSelectedKeys.push(data.key)
                        }
                        mockData.push(data);
                     }
                     this.mockData = mockData;
                     this.targetKeys = targetKeys;
+                    this.firstLeft = this.notSelectedKeys[0]
+                    //console.log("First Right == ")
+                    this.firstRight = targetKeys[0]
                    // this.initCompany()
                    
                 }, (error) => {

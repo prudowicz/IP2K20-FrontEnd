@@ -12,7 +12,6 @@
 // import SymbolsManagment from './selectSymbols/SymbolsManagement.vue'
  import Transfer from './settings/Transfer.vue'
 
-
 export default {
   name: 'Settings',
    components: {

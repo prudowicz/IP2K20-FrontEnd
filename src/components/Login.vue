@@ -51,12 +51,12 @@ export default {
     }
   },
   methods: {
-      checkLogin: function() {
+     checkLogin: async function() {
           const headers = {
                 'Content-Type': 'application/json',
                 'Device-info': 'None'
             }
-          axios.post(this.loginEndpoint, {
+          await axios.post(this.loginEndpoint, {
             email: this.email,
             password: this.password,
             },
@@ -67,8 +67,31 @@ export default {
                 this.$emit('token',  response.data["jwtToken"]);
                 this.$emit('logging', true);
                 localStorage.setItem('token', response.data["jwtToken"])
-                console.log(response);
+                if(!sessionStorage.getItem('categories')) {
+  let headers = {
+                'Content-Type': 'application/json',
+                'Device-info': 'None',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            };
+          axios.get(process.env.VUE_APP_API_ENDPOINT + '/getDistinctCategory',
+                { 
+                    headers: headers 
+                }).then(function(response) {
+                  console.log(response)
+                  console.log(JSON.stringify(response.data))
+                sessionStorage.setItem('categories',JSON.stringify(response.data));
+          });
+          axios.get(process.env.VUE_APP_API_ENDPOINT + '/getDistinctCurrency',
+                { 
+                    headers: headers 
+                }).then(function(response) {
+                  console.log(response)
+                  console.log(JSON.stringify(response.data))
+                sessionStorage.setItem('currencies',JSON.stringify(response.data));
                 window.location.href = ".";
+          });
+  }
+                console.log(response);
             }, (error) => {
                 this.failed = true
              //   this.sucess = false
