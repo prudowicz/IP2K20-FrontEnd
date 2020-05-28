@@ -108,8 +108,7 @@ export default {
             this.$emit('account', this.doAccount);
         },
         signOut: function() {
-            sessionStorage.clear();
-            localStorage.removeItem('token');
+            localStorage.clear();
             this.$emit('signout', true);
         }
     }

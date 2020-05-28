@@ -67,7 +67,7 @@ export default {
                 this.$emit('token',  response.data["jwtToken"]);
                 this.$emit('logging', true);
                 localStorage.setItem('token', response.data["jwtToken"])
-                if(!sessionStorage.getItem('categories')) {
+                if(!localStorage.getItem('categories')) {
   let headers = {
                 'Content-Type': 'application/json',
                 'Device-info': 'None',
@@ -79,17 +79,18 @@ export default {
                 }).then(function(response) {
                   console.log(response)
                   console.log(JSON.stringify(response.data))
-                sessionStorage.setItem('categories',JSON.stringify(response.data));
-          });
-          axios.get(process.env.VUE_APP_API_ENDPOINT + '/getDistinctCurrency',
+                localStorage.setItem('categories',JSON.stringify(response.data));
+                axios.get(process.env.VUE_APP_API_ENDPOINT + '/getDistinctCurrency',
                 { 
                     headers: headers 
                 }).then(function(response) {
                   console.log(response)
                   console.log(JSON.stringify(response.data))
-                sessionStorage.setItem('currencies',JSON.stringify(response.data));
+                localStorage.setItem('currencies',JSON.stringify(response.data));
                 window.location.href = ".";
           });
+          });
+          
   }
                 console.log(response);
             }, (error) => {

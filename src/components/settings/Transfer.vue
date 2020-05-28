@@ -99,9 +99,9 @@ Vue.use(Antd);
 import difference from 'lodash/difference';
 
 function getCategoriesList() {
-    if(sessionStorage.getItem('categories')) {
+    if(localStorage.getItem('categories')) {
       let list = []
-      let temp = JSON.parse(sessionStorage.getItem('categories'))
+      let temp = JSON.parse(localStorage.getItem('categories'))
       console.log(temp)
       for(let e of temp) {
         let obj = {"text": e, "value": e}
@@ -114,9 +114,9 @@ function getCategoriesList() {
 
 
 function getCurrenciesList() {
-    if(sessionStorage.getItem('currencies')) {
+    if(localStorage.getItem('currencies')) {
       let list = []
-      let temp = JSON.parse(sessionStorage.getItem('currencies'))
+      let temp = JSON.parse(localStorage.getItem('currencies'))
       console.log(temp)
       for(let e of temp) {
         let obj = {"text": e, "value": e}
