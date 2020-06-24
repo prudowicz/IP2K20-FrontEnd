@@ -170,6 +170,8 @@ export default {
           var days30ago = current - (60 * 60 * 24 * 30 * 1000);
           start = days30ago;
         }
+        console.log("start")
+        console.log(start)
         const hide = this.$message.loading('Loading chart data...', 0);
         this.hides.push(hide);
            let headers = {
@@ -190,6 +192,8 @@ export default {
                         series[1].data.push(response.data.profit[i].toFixed(2));
                     }
                   this.chartOptions = chartOptions;
+                  console.log("chart options")
+                  console.log(chartOptions)
                   this.series = series;
                 }, (error) => {
                     console.log(error);

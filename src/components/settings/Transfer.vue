@@ -217,7 +217,7 @@ export default {
       console.log(`Selected: ${this.filteredItems}`);
       
     },
-      ifLeftTable(key) {
+      isLeftTable(key) {
         if(this.targetKeys.includes(key)) {
           return false
         }

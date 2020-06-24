@@ -9,9 +9,6 @@
         <b-button variant="primary" size="md" class="mb-1" v-on:click="setHome" > <b-icon icon="house"> </b-icon> Home </b-button>
     </b-navbar-brand>
 
-    <b-navbar-brand>
-        <b-button variant="primary" size="md" class="mb-1" v-on:click="setSettings" > <b-icon icon="bar-chart-fill"> </b-icon> All time stats </b-button>
-    </b-navbar-brand>
 
     <b-navbar-toggle target="nav-collapse"></b-navbar-toggle>
 
