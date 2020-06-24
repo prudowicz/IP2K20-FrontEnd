@@ -33,7 +33,7 @@
       :target-keys="targetKeys"
       :disabled="disabled"
       :show-search="showSearch"
-      :filter-option="(inputValue, item) => (item.title.indexOf(inputValue) !== -1)"
+      :filter-option="(inputValue, item) => (item.title.indexOf(inputValue.toUpperCase()) !== -1)"
       :show-select-all="false"
       @change="onChange"
     >
@@ -92,7 +92,7 @@ import 'ant-design-vue/dist/antd.css';
 import Vue from 'vue';
 import Antd from 'ant-design-vue';
 import axios from 'axios'
-// import Slider from './Slider.vue'
+
 
 Vue.use(Antd);
 
@@ -198,15 +198,18 @@ export default {
       firstRight: "",
       notSelectedKeys: [],
       categories: [],
-      currencies: []
+      currencies: [],
+      hides: [],
     };
   },
   mounted() {
     this.getData();
     this.getMaxInvest();
   },
-  async beforeCreate() {
-        
+  beforeDestroy() {
+    for(var hide of this.hides) {
+      hide();
+    }
   },
   methods: {
     handleLeftCurrencyChange(value) {
@@ -319,6 +322,8 @@ export default {
     async getData() {
           const targetKeys = [];
           const mockData = [];
+          const hide = this.$message.loading('Loading data...', 0);
+         this.hides.push(hide);
           let headers = {
                 'Content-Type': 'application/json',
                 'Device-info': 'None',
@@ -329,6 +334,7 @@ export default {
                     headers: headers 
                 })
                 .then((response) => {
+                  hide();
                     for (var item of response.data) {
                         const data = {
                         key: item.name,

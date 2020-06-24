@@ -6,7 +6,7 @@
     </b-navbar-brand>
 
     <b-navbar-brand>
-        <b-button variant="primary" size="md" class="mb-1" v-on:click="setSettings" > <b-icon icon="house"> </b-icon> Home </b-button>
+        <b-button variant="primary" size="md" class="mb-1" v-on:click="setHome" > <b-icon icon="house"> </b-icon> Home </b-button>
     </b-navbar-brand>
 
     <b-navbar-brand>
@@ -22,36 +22,36 @@
         <b-collapse id="nav-collapse" is-nav>
             <b-navbar-nav>
                  <b-nav-item disabled>
-                    <span class="quick-stat">This month: <span :class="{ greentextclass: thisMonthProfit > 0, redtextclass: thisMonthProfit < 0 }">
-                        <vue-numeric currency="$" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="thisMonthProfit"></vue-numeric>
+                    <span class="quick-stat">This and prev month: <span :class="{ greentextclass: thisMonthProfit > 0, redtextclass: thisMonthProfit < 0 }">
+                        <vue-numeric currency="PLN" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="thisMonthProfit"></vue-numeric>
                     </span>
                     </span>
                     </b-nav-item>
                 <b-nav-item disabled><span class="quick-stat"> <b-icon icon="slash"></b-icon></span> </b-nav-item>
                 <b-nav-item disabled>
                     <span class="quick-stat">This week: <span :class="{ greentextclass: thisWeekProfit > 0, redtextclass: thisWeekProfit < 0 }">
-                        <vue-numeric currency="$" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="thisWeekProfit"></vue-numeric>
+                        <vue-numeric currency="PLN" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="thisWeekProfit"></vue-numeric>
                     </span>
                     </span>
                     </b-nav-item>
                 <b-nav-item disabled><span class="quick-stat"> <b-icon icon="slash"></b-icon></span> </b-nav-item>
                 <b-nav-item disabled>
                     <span class="quick-stat">Yesterday: <span :class="{ greentextclass: yesterdayProfit > 0, redtextclass: yesterdayProfit < 0 }">
-                        <vue-numeric currency="$" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="yesterdayProfit"></vue-numeric>
+                        <vue-numeric currency="PLN" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="yesterdayProfit"></vue-numeric>
                     </span>
                     </span>
                     </b-nav-item>
                 <b-nav-item disabled><span class="quick-stat"> <b-icon icon="slash"></b-icon></span> </b-nav-item>
                 <b-nav-item disabled>
                     <span class="quick-stat">Today: <span :class="{ greentextclass: todayProfit > 0, redtextclass: todayProfit < 0 }">
-                        <vue-numeric currency="$" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="todayProfit"></vue-numeric>
+                        <vue-numeric currency="PLN" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="todayProfit"></vue-numeric>
                     </span>
                     </span>
                     </b-nav-item>
                 <b-nav-item disabled><span class="quick-stat"> <b-icon icon="slash"></b-icon></span> </b-nav-item>
                 <b-nav-item disabled style="margin-right: 10px">
                     <span class="quick-stat">Account: <span :class="{ greentextclass: accountValue > 0, redtextclass: accountValue < 0 }">
-                        <vue-numeric currency="$" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="accountValue"></vue-numeric>
+                        <vue-numeric currency="PLN" decimal-separator="." thousand-separator=" " read-only precision="2" v-bind:minus="true" v-model="accountValue"></vue-numeric>
                     </span>
                     </span>
                     </b-nav-item>
@@ -74,6 +74,9 @@
 
 <script>
 import VueNumeric from 'vue-numeric'
+import axios from 'axios';
+import moment from 'moment';
+
 export default {
     name: 'Navbar',
     components: {
@@ -90,8 +93,12 @@ export default {
             accountValue: 1500.25,
             yesterdayProfit: 0.00,
             thisWeekProfit: 305.6,
-            thisMonthProfit: 567.52
+            thisMonthProfit: 567.52,
+            currency: "",
         }
+    },
+    mounted() {
+        this.getData();
     },
     methods: {
         setSettings: function() {
@@ -110,7 +117,102 @@ export default {
         signOut: function() {
             localStorage.clear();
             this.$emit('signout', true);
-        }
+        },
+        setHome: function() {
+            this.doHome = true;
+            this.$emit('home', this.doHome);
+        },
+        getData: async function() {
+            let headers = {
+                'Content-Type': 'application/json',
+                'Device-info': 'None',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          await axios.get(process.env.VUE_APP_API_ENDPOINT + '/getBalance',
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    console.log(response);
+                    this.currency = response.data.currency;
+                    this.accountValue = response.data.balance;
+
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+                //today
+            var mmt = moment();
+            var mmtMidnight = mmt.startOf('day');
+            console.log(process.env.VUE_APP_API_ENDPOINT + '/profitHistory?start=' + mmtMidnight);
+            axios.get(process.env.VUE_APP_API_ENDPOINT + '/profitHistory?start=' + mmtMidnight,
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    let newProfit = 0.0;
+                    console.log(response);
+                    for(var profit of response.data.profit) {
+                        newProfit += profit
+                    }
+                this.todayProfit = newProfit;
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+                //yesterday
+                var yesterdayMidnight = mmtMidnight - 60*60*24;
+                axios.get(process.env.VUE_APP_API_ENDPOINT + '/profitHistory?start=' + yesterdayMidnight,
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    let newProfit = 0.0;
+                    console.log(response);
+                    for(var profit of response.data.profit) {
+                        newProfit += profit
+                    }
+                this.yesterdayProfit = newProfit;
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+                //this week
+                var thisWeekStartMidnight = mmt.startOf('week');
+                axios.get(process.env.VUE_APP_API_ENDPOINT + '/profitHistory?start=' + thisWeekStartMidnight,
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    let newProfit = 0.0;
+                    console.log(response);
+                    for(var profit of response.data.profit) {
+                        newProfit += profit
+                    }
+                this.thisWeekProfit = newProfit;
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+                //month
+                var thisMonthStartMidnight = mmt.startOf('month');
+                console.log(thisMonthStartMidnight.unix())
+                axios.get(process.env.VUE_APP_API_ENDPOINT + '/profitHistory?start=' + thisMonthStartMidnight,
+                { 
+                    headers: headers 
+                })
+                .then((response) => {
+                    let newProfit = 0.0;
+                    console.log(response);
+                    for(var profit of response.data.profit) {
+                        newProfit += profit
+                    }
+                this.thisMonthProfit = newProfit;
+                }, (error) => {
+                    console.log(error);
+                    this.errorMessage = error;
+                });
+        },
     }
 }
 </script>
